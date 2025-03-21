@@ -7,8 +7,8 @@ function player.load()
     player.y = 400
     player.xvel = 0
     player.yvel = 0
-    player.friction = 5
-    player.speed = 800
+    player.friction = 5.8
+    player.speed = 1200
 
     -- Lower crane
     player.startingY = player.y
@@ -34,31 +34,39 @@ end
 
 function move(dt)
     if not player.isLowering and not player.returning then
-        if love.keyboard.isDown("d") or love.keyboard.isDown("right") and
-            player.xvel < player.speed then
-            player.xvel = player.xvel + player.speed * dt
+        -- Get input directions first
+        local xInput = 0
+        local yInput = 0
+        
+        if love.keyboard.isDown("d") or love.keyboard.isDown("right") then
+            xInput = 1
+        elseif love.keyboard.isDown("a") or love.keyboard.isDown("left") then
+            xInput = -1
         end
-
-        if love.keyboard.isDown("a") or love.keyboard.isDown("left") and
-            player.xvel > -player.speed then
-            player.xvel = player.xvel - player.speed * dt
+        
+        if love.keyboard.isDown("s") or love.keyboard.isDown("down") then
+            yInput = 1
+        elseif love.keyboard.isDown("w") or love.keyboard.isDown("up") then
+            yInput = -1
         end
-
-        if love.keyboard.isDown("s") or love.keyboard.isDown("down") and
-            player.yvel < player.speed then
-            player.yvel = player.yvel + player.speed * dt
+        
+        -- Normalize diagonal movement
+        if xInput ~= 0 and yInput ~= 0 then
+            local length = math.sqrt(2)
+            xInput = xInput / length
+            yInput = yInput / length
         end
-
-        if love.keyboard.isDown("w") or love.keyboard.isDown("up") and
-            player.yvel > -player.speed then
-            player.yvel = player.yvel - player.speed * dt
-        end
-
+        
+        -- Apply input to velocity
+        player.xvel = player.xvel + xInput * player.speed * dt
+        player.yvel = player.yvel + yInput * player.speed * dt
+        
         if love.keyboard.isDown("space") and not player.isLowering and not player.returning then
             startLowering()
         end
     end
 end
+
 
 function startLowering()
     if not player.isLowering and not player.returning then
@@ -84,7 +92,6 @@ function hookStuff(dt)
             -- Wait a moment before starting to return (optional)
             player.currentDelay = player.returnDelay -- Start the delay timer
         end
-
     elseif player.returning then
         if player.currentDelay > 0 then
             player.currentDelay = player.currentDelay - dt
@@ -109,9 +116,10 @@ function player.update(dt)
     move(dt)
 end
 
-function player.draw(scaleChar)
+function player.drawShadow(scaleChar)
     -- Draw shadow
     local windowScale = math.min(window.getScaleX(), window.getScaleY())
+
     local xOffset = (window.getCurrentWidth() - window.getOriginalWidth() * windowScale) / 2
     local yOffset = (window.getCurrentHeight() - window.getOriginalHeight() * windowScale) / 2
 
@@ -124,12 +132,13 @@ function player.draw(scaleChar)
     local centerY = player.y + (tileHeight * scaleChar / 2)
 
     -- Calculate shadow dimensions - scale proportionally with the character
+
     local shadowHeight = 3 * scaleChar
     local shadowWidth = 8 * scaleChar
 
     -- Draw the shadow (red ellipse)
     love.graphics.setColor(0, 0, 0, .60)
-    
+
     if not player.isLowering and not player.returning then
         love.graphics.ellipse(
             "fill",
@@ -142,32 +151,37 @@ function player.draw(scaleChar)
         love.graphics.ellipse(
             "fill",
             centerX * windowScale + xOffset,
-            (player.startingY + (tileHeight * scaleChar / 2) + player.targetY)* windowScale + yOffset, -- Position shadow to final position
+            (player.startingY + (tileHeight * scaleChar / 2) + player.targetY) * windowScale + yOffset, -- Position shadow to final position
             shadowWidth * windowScale,
             shadowHeight * windowScale
         )
     end
+end
+
+function player.draw(scaleChar)
+    -- Draw shadow
+    local windowScale = math.min(window.getScaleX(), window.getScaleY())
+    local shadowHeight = 3 * scaleChar
 
     -- Draw the player
     love.graphics.setColor(1, 1, 1)
     if player.returning then
-        tileset:drawTile(tileset:getTileIndex(7, 2), player.x, player.y-(shadowHeight*3.5), scaleChar, 0)
+        tileset:drawTile(tileset:getTileIndex(5, 2), player.x, player.y - (shadowHeight * 3.5), scaleChar, 0)
     else
-        tileset:drawTile(tileset:getTileIndex(7, 1), player.x, player.y, scaleChar, 0)
+        tileset:drawTile(tileset:getTileIndex(5, 1), player.x, player.y, scaleChar, 0)
     end
-    
+
 
     -- Reset color and draw debug info
     love.graphics.setColor(1, 1, 1)
     love.graphics.print("Lowering: " .. tostring(player.isLowering), 10, 10)
     love.graphics.print("Returning: " .. tostring(player.returning), 10, 30)
-    love.graphics.print("Y position: " .. tostring(math.floor(player.y)), 10, 50)
-    love.graphics.print("Target: " .. tostring(player.startingY + player.targetY), 10, 70)
-    love.graphics.print("Y offset: " .. tostring(math.floor(windowScale)), 10, 100)
+    love.graphics.print("X position: " .. tostring(math.floor(player.x)), 10, 50)
+    love.graphics.print("Y position: " .. tostring(math.floor(player.y)), 10, 70)
+    love.graphics.print("Target: " .. tostring(player.startingY + player.targetY), 10, 90)
+    love.graphics.print("Window scale: " .. tostring(math.floor(windowScale)), 10, 110)
 
-    love.graphics.print("Delay: " .. tostring(math.floor(player.currentDelay * 10) / 10), 10, 90)
-    
-    
+    love.graphics.print("Delay: " .. tostring(math.floor(player.currentDelay * 10) / 10), 10, 130)
 end
 
 return player

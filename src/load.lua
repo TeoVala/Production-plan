@@ -1,7 +1,6 @@
 local window = require("src.window")
 local Tileset = require("src.tileset")
 local player = require("src.units.player")
-local map = require("src.mapRender")
 
 function load()
     window.initialize()
@@ -12,14 +11,20 @@ function load()
     tileset = Tileset.new("assets/Tileset-16x16.jpg")
 
     -- Create animations
+    -- Todo fix a pixel it caused when I made the tilesets smaller I have backup of the old one
+    -- Convayor belts
     tileset:createAnimation("conv-BR", tileset:getTileIndex(1,1), 3, .25)
-    tileset:createAnimation("conv-BL", tileset:getTileIndex(2,1), 3, .25)
-    tileset:createAnimation("conv-RU", tileset:getTileIndex(3,1), 3, .25)
-    tileset:createAnimation("conv-LU", tileset:getTileIndex(4,1), 3, .25)
-    tileset:createAnimation("conv-RL", tileset:getTileIndex(5,1), 3, .25)
-    tileset:createAnimation("conv-LR", tileset:getTileIndex(6,1), 3, .25)
-    tileset:createAnimation("conv-UB", tileset:getTileIndex(8,1), 3, .25)
-    tileset:createAnimation("conv-BU", tileset:getTileIndex(9,1), 3, .25)
+    tileset:createAnimation("conv-BL", tileset:getTileIndex(1,1), 3, .25, {flipH = true})
+    tileset:createAnimation("conv-RU", tileset:getTileIndex(2,1), 3, .25, {flipH = true})
+    tileset:createAnimation("conv-LU", tileset:getTileIndex(2,1), 3, .25)
+    tileset:createAnimation("conv-LB", tileset:getTileIndex(2,1), 3, .25, {flipV = true})
+    tileset:createAnimation("conv-RB", tileset:getTileIndex(2,1), 3, .25, {flipV = true, flipH = true})
+    tileset:createAnimation("conv-UL", tileset:getTileIndex(1,1), 3, .25, {flipH = true,flipV = true})
+    tileset:createAnimation("conv-UR", tileset:getTileIndex(1,1), 3, .25, {flipV = true})
+    tileset:createAnimation("conv-RL", tileset:getTileIndex(4,1), 3, .25, {flipH = true})
+    tileset:createAnimation("conv-LR", tileset:getTileIndex(4,1), 3, .25)
+    tileset:createAnimation("conv-UB", tileset:getTileIndex(3,1), 3, .25, {flipV = true})
+    tileset:createAnimation("conv-BU", tileset:getTileIndex(3,1), 3, .25)
 
     player.load()
 end

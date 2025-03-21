@@ -17,12 +17,12 @@ function Tileset.new(imagePath)
     imageData:mapPixel(function(x, y, r, g, b, a)
         -- Check if the color is close to the target blue (with a small tolerance)
         local tolerance = 0.01
-        if math.abs(r - keyR) < tolerance and
-            math.abs(g - keyG) < tolerance and
-            math.abs(b - keyB) < tolerance then
-            return r, g, b, 0 -- Make transparent
+        if math.abs(r - keyR) < tolerance and 
+           math.abs(g - keyG) < tolerance and 
+           math.abs(b - keyB) < tolerance then
+            return r, g, b, 0  -- Make transparent
         else
-            return r, g, b, a -- Leave unchanged
+            return r, g, b, a  -- Leave unchanged
         end
     end)
 
@@ -71,7 +71,7 @@ function Tileset.new(imagePath)
 end
 
 -- Draw specific tile from the tileset
-function Tileset:drawTile(tileIndex, x, y, scale, rotation)
+function Tileset:drawTile(tileIndex, x, y, scale, rotation, flipH, flipV)
     scale = scale or 1
     rotation = rotation or 0
     flipH = flipH or false
@@ -88,16 +88,16 @@ function Tileset:drawTile(tileIndex, x, y, scale, rotation)
         -- Apply flipping by adjusting the scale values
         local scaleX = scale * windowScale
         local scaleY = scale * windowScale
-
+        
         if flipH then scaleX = -scaleX end
         if flipV then scaleY = -scaleY end
 
-        -- Adjust origin when flipping
-        local originX = 0
-        local originY = 0
-
-        if flipH then originX = self.tileWidth end
-        if flipV then originY = self.tileHeight end
+         -- Adjust origin when flipping
+         local originX = 0
+         local originY = 0
+         
+         if flipH then originX = self.tileWidth end
+         if flipV then originY = self.tileHeight end
 
         love.graphics.draw(
             self.image,
@@ -108,9 +108,7 @@ function Tileset:drawTile(tileIndex, x, y, scale, rotation)
             scaleX,
             scaleY,
             originX,
-            originY,
-            originX, -- Origin offset X
-            originY  -- Origin offset Y
+            originY
         )
     end
 end
@@ -121,11 +119,14 @@ function Tileset:getTileIndex(row, column)
 end
 
 -- Create an animation (starting from a specific tile and containing a number of frames)
-function Tileset:createAnimation(name, startTileIndex, numFrames, frameTime)
+function Tileset:createAnimation(name, startTileIndex, numFrames, frameTime, options)
     local frames = {}
     for i = 0, numFrames - 1 do
         table.insert(frames, startTileIndex + i)
     end
+
+    -- Default options
+    options = options or {}
 
     self.animations[name] = {
         frames = frames,
@@ -137,8 +138,8 @@ function Tileset:createAnimation(name, startTileIndex, numFrames, frameTime)
         onComplete = nil, -- Callback for when animation completes
         scale = 1,
         rotation = 0,
-        flipH = false, -- Add flip horizontal property
-        flipV = false  -- Add flip vertical property
+        flipH = options.flipH or false,    -- Initialize flip horizontal property
+        flipV = options.flipV or false     -- Initialize flip vertical property
     }
 
     return self.animations[name] -- Return reference to the animation for further customization
@@ -220,14 +221,21 @@ function Tileset:drawAnimation(name, x, y, customScale, customRotation, customFl
     local tileIndex = anim.frames[anim.currentFrame]
     local scale = customScale or anim.scale or 1
     local rotation = customRotation or anim.rotation or 0
-
+    
     local flipH = customFlipH
-    if flipH == nil then flipH = anim.flipH end
+    if flipH == nil then  -- Only use animation property if parameter wasn't provided
+        flipH = anim.flipH or false
+    end
+    
     local flipV = customFlipV
-    if flipV == nil then flipV = anim.flipV end
+    if flipV == nil then  -- Only use animation property if parameter wasn't provided
+        flipV = anim.flipV or false
+    end
 
+    -- Pass the flip values to drawTile
     self:drawTile(tileIndex, x, y, scale, rotation, flipH, flipV)
 end
+
 
 -- Get scaled width of a tile
 function Tileset:getScaledWidth(scale)

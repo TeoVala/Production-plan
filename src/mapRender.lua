@@ -1,28 +1,48 @@
 local window = require('src.window')
+local levelData = require('src.levels.levelData')
+tileSize = 16
 
-map = {}
-local tileSize = 16
+
 
 local mapTiles = {
-    { 1, 6, 6, 6, 6, 2 }, -- row 1
-    { 9, 0, 0, 0, 0, 8 }, -- row 2
-    { 9, 0, 0, 0, 0, 8 }, -- row 3
-    { 9, 0, 0, 0, 0, 8 }, -- row 3
-    { 9, 0, 0, 0, 0, 8 }, -- row 3
-    { 9, 0, 0, 0, 0, 8 }, -- row 3
-    { 3, 5, 5, 5, 5, 4 }, -- row 4
+}
+
+mapTiles = levelData.level1
+
+map = {
+    mapTiles = mapTiles, -- Expose the mapTiles table
 }
 
 tileValues = {
     [0] = 'empty',
+
+    -- -- Animated tiles
     [1] = 'conv-BR',
     [2] = 'conv-BL',
     [3] = "conv-RU",
     [4] = "conv-LU",
     [5] = "conv-RL",
     [6] = "conv-LR",
-    [8] = "conv-UB",
-    [9] = "conv-BU",
+    [7] = "conv-UB",
+    [8] = "conv-BU",
+    [9] = "conv-LB",
+    [10] = "conv-RB",
+    [11] = "conv-UL",
+    [12] = "conv-UR",
+
+    -- Single tiles
+    [20] = { 6, 2 },                      -- wall-L
+    [21] = { { 6, 2 }, { true, false } }, -- wall-R
+    [22] = { 6, 3 },                      -- wall-U
+    [23] = { { 6, 3 }, { false, true } }, -- wall-B
+    [24] = { 6, 1 },                      -- wall-TL
+    [25] = { { 6, 1 }, { true, false } }, -- wall-TR
+    [26] = { 5, 3 },                      -- wall-BL
+    [27] = { { 5, 3 }, { true, false } }, -- wall-BR flipH
+
+    -- Units, interactables
+    [40] = { 7, 1 }, -- spawner
+    [41] = { 7, 2 }, -- destroyer
 }
 
 
@@ -41,16 +61,53 @@ function map.draw(tileScale)
     for i, row in ipairs(mapTiles) do
         for j, value in ipairs(row) do
             local tileType = tileValues[value]
-            if tileType ~= 'empty' then
-                -- Calculate tile position in game coordinates
-                local tileX = mapX + ((j - 1) * tileSize * tileScale )
-                local tileY = mapY + ((i - 1) * tileSize * tileScale )
 
+            -- Calculate tile position in game coordinates
+            local tileX = mapX + ((j - 1) * tileSize * tileScale)
+            local tileY = mapY + ((i - 1) * tileSize * tileScale)
+
+            if value < 20 and value ~= 0 then
                 tileset:drawAnimation(
                     tileType,
                     tileX,
                     tileY,
                     tileScale
+                )
+            elseif value < 40 and value ~= 0 then
+                if type(tileType) == "table" and type(tileType[1]) == "table" then
+                    local tileCoords = tileType[1]
+                    local col, row = tileCoords[1], tileCoords[2]
+                    local flip = tileType[2]
+
+                    local tileIndex = tileset:getTileIndex(col, row)
+
+                    tileset:drawTile(
+                        tileIndex,
+                        tileX, tileY,
+                        tileScale,
+                        0,
+                        unpack(flip) -- Unpack the flip table to pass as separate arguments
+                    )
+                else
+                    local col, row = tileType[1], tileType[2]
+                    local tileIndex = tileset:getTileIndex(col, row)
+
+                    tileset:drawTile(
+                        tileIndex,
+                        tileX, tileY,
+                        tileScale,
+                        0
+                    )
+                end
+            elseif value >= 40 and value ~= 0 then
+                local col, row = tileType[1], tileType[2]
+                local tileIndex = tileset:getTileIndex(col, row)
+
+                tileset:drawTile(
+                    tileIndex,
+                    tileX, tileY,
+                    tileScale,
+                    0
                 )
             end
         end
