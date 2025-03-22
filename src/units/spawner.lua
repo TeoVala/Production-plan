@@ -98,7 +98,8 @@ function spawner.spawnItem(spawnerInfo, tileScale)
         reachedCenter = false,
         currDirection = { x = 0, y = 0 },
         itemId = math.random(1, 5), -- Random item type
-        itemValue = selectRarity()  -- Rarity values
+        itemValue = selectRarity(), -- Rarity values
+        rotation = math.random(-30, 30) * (math.pi / 180) --Rotate item randomly, Convert degrees to radians
     }
 
     -- Add to the global levelItems table
@@ -173,13 +174,13 @@ function spawner.draw(tileScale)
     -- Draw spawners
     love.graphics.setColor(0, 0.7, 0.3)
     for _, spawn in ipairs(spawner.locations) do
-        love.graphics.rectangle(
-            'line',
-            spawn.x * windowScale + xOffset,
-            spawn.y * windowScale + yOffset,
-            tileSize * tileScale * windowScale,
-            tileSize * tileScale * windowScale
-        )
+        -- love.graphics.rectangle(
+        --     'line',
+        --     spawn.x * windowScale + xOffset,
+        --     spawn.y * windowScale + yOffset,
+        --     tileSize * tileScale * windowScale,
+        --     tileSize * tileScale * windowScale
+        -- )
 
         -- Draw timer
         love.graphics.setColor(1, 1, 1)

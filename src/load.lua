@@ -9,6 +9,7 @@ function load()
 
     -- Load the tilesets
     tileset = Tileset.new("assets/Tileset-16x16.jpg")
+    itemsTileset = Tileset.new("assets/items-16x16.jpg")
 
     -- Create animations
     -- Todo fix a pixel it caused when I made the tilesets smaller I have backup of the old one

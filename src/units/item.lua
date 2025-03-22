@@ -4,6 +4,21 @@ local map = require("src.mapRender")
 
 levelItems = {}
 
+local itemsValuesId = {
+    [1] = { 1, 1 },
+    [2] = { 1, 2 },
+    [3] = { 1, 3 },
+    [4] = { 2, 1 },
+    [5] = { 2, 2 },
+}
+
+-- Store the color values themselves, not the function calls
+local colRarValues = {
+    [1] = {1, 1, 1, 0.8},             
+    [2] = {101/255, 217/255, 59/255, .85},          -- Green #65d93b
+    [3] = {32/255, 107/255, 227/255, .8}           -- Blue #206be3
+}
+
 -- Conveyor movement definitions - first phase, second phase
 local conveyorDirections = {
     ['conv-BR'] = { { x = 0, y = -1 }, { x = 1, y = 0 } },  -- Bottom to Right: first go up, then right
@@ -22,7 +37,7 @@ local conveyorDirections = {
 }
 
 local conveyorSpeed = 35
-local centerThreshold = 5  -- How close to center before changing dir
+local centerThreshold = 5 -- How close to center before changing dir
 local centeringSpeed = 10 -- Speed at which items center themselves to tile centers
 
 -- Helper function to get tile type and center at a specific position
@@ -67,12 +82,12 @@ end
 function item.directionVector(x1, y1, x2, y2)
     local dx = x2 - x1
     local dy = y2 - y1
-    local length = math.sqrt(dx*dx + dy*dy)
-    
+    local length = math.sqrt(dx * dx + dy * dy)
+
     if length > 0 then
-        return {x = dx/length, y = dy/length}
+        return { x = dx / length, y = dy / length }
     else
-        return {x = 0, y = 0}
+        return { x = 0, y = 0 }
     end
 end
 
@@ -181,29 +196,77 @@ function item.update(dt, tileScale)
     end
 end
 
-function item.draw()
-    -- Get window scaling factors for proper positioning
-    local windowScale = math.min(window.getScaleX(), window.getScaleY())
-    local xOffset = (window.getCurrentWidth() - window.getOriginalWidth() * windowScale) / 2
-    local yOffset = (window.getCurrentHeight() - window.getOriginalHeight() * windowScale) / 2
-
+function item.draw(tileScale)
     for _, theItem in ipairs(levelItems) do
-        -- Calculate item position with proper scaling
-        local scaledX = theItem.x * windowScale + xOffset
-        local scaledY = theItem.y * windowScale + yOffset
-        local scaledWidth = theItem.size * windowScale
-        local scaledHeight = theItem.size * windowScale
+        local itemType = itemsValuesId[theItem.itemId]
+        local col, row = itemType[1], itemType[2]
+        local tileIndex = itemsTileset:getTileIndex(col, row)
+        local outLineIndex = itemsTileset:getTileIndex(col + 2, row)
 
-        -- Draw the item
-        love.graphics.setColor(0, 1, 0)
-        love.graphics.rectangle(
-            'fill',
-            scaledX,
-            scaledY,
-            scaledWidth,
-            scaledHeight
+        -- Calculate center of the item in game coordinates
+        local itemCenterX = theItem.x + theItem.size / 2
+        local itemCenterY = theItem.y + theItem.size / 2
+
+        -- Calculate tile size when drawn at the specified scale
+        local tileDrawWidth = itemsTileset:getTileWidth() * tileScale
+        local tileDrawHeight = itemsTileset:getTileHeight() * tileScale
+
+        -- Calculate the top-left position where the tile should be drawn
+        -- to be centered on the item center
+        local tileDrawX = itemCenterX - tileDrawWidth / 2
+        local tileDrawY = itemCenterY - tileDrawHeight / 2
+
+
+        -- -- Draw colored outline based on item value
+        love.graphics.setColor(1, 1, 1)
+        itemsTileset:drawTile(
+            outLineIndex,
+            tileDrawX,            -- Adjusted X to center the tile
+            tileDrawY,            -- Adjusted Y to center the tile
+            tileScale * 1.35,     -- Scale relative to tile size, also make items a bit bigger
+            theItem.rotation or 0 -- Rotation
         )
+
+        -- Then overlay a colored mask using alpha blend mode
+        love.graphics.setBlendMode("alpha", "alphamultiply")
+
+        -- Apply the color based on the itemValue
+        local colorToUse = colRarValues[theItem.itemValue] or colRarValues[1] -- Default to first color if not found
+        love.graphics.setColor(unpack(colorToUse))                    -- unpack converts the table to individual arguments
+
+        itemsTileset:drawTile(
+            outLineIndex,
+            tileDrawX,
+            tileDrawY,
+            tileScale * 1.35,
+            theItem.rotation or 0
+        )
+
+
+        -- Reset blend mode to normal
+        love.graphics.setBlendMode("alpha")
+
+        love.graphics.setColor(1, 1, 1)
+        itemsTileset:drawTile(
+            tileIndex,
+            tileDrawX,            -- Adjusted X to center the tile
+            tileDrawY,            -- Adjusted Y to center the tile
+            tileScale * 1.15,     -- Scale relative to tile size, also make items a bit bigger
+            theItem.rotation or 0 -- Rotation
+        )
+
+
+
+        -- -- Debug: Draw center marker
+        -- local centerX = tileDrawX
+        -- local centerY = tileDrawY
+        -- love.graphics.setColor(1, 0, 0)
+        -- love.graphics.circle('fill', centerX, centerY, 3)
     end
+
+    -- Display item count for debugging
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("Items: " .. #levelItems, 10, 250)
 end
 
 return item

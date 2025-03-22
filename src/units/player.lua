@@ -127,10 +127,6 @@ function player.drawShadow(scaleChar)
     local tileWidth = 16
     local tileHeight = 16
 
-    -- Calculate the center position of the player
-    local centerX = player.x + (tileWidth * scaleChar / 2)
-    local centerY = player.y + (tileHeight * scaleChar / 2)
-
     -- Calculate shadow dimensions - scale proportionally with the character
 
     local shadowHeight = 3 * scaleChar
@@ -142,16 +138,16 @@ function player.drawShadow(scaleChar)
     if not player.isLowering and not player.returning then
         love.graphics.ellipse(
             "fill",
-            centerX * windowScale + xOffset,
-            (centerY + player.targetY) * windowScale + yOffset, -- Position shadow below the player center
+            player.x  * windowScale + xOffset,
+            (player.y  + player.targetY) * windowScale , -- Position shadow below the player center
             shadowWidth * windowScale,
             shadowHeight * windowScale
         )
     else
         love.graphics.ellipse(
             "fill",
-            centerX * windowScale + xOffset,
-            (player.startingY + (tileHeight * scaleChar / 2) + player.targetY) * windowScale + yOffset, -- Position shadow to final position
+            player.x  * windowScale + xOffset,
+            (player.startingY + player.targetY) * windowScale + yOffset, -- Position shadow to final position
             shadowWidth * windowScale,
             shadowHeight * windowScale
         )

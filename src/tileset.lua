@@ -92,12 +92,13 @@ function Tileset:drawTile(tileIndex, x, y, scale, rotation, flipH, flipV)
         if flipH then scaleX = -scaleX end
         if flipV then scaleY = -scaleY end
 
-         -- Adjust origin when flipping
-         local originX = 0
-         local originY = 0
+         -- Set origin to the center of the tile for rotation
+        local originX = rotation and self.tileWidth / 2 or 0
+        local originY = rotation and self.tileWidth / 2 or 0
          
-         if flipH then originX = self.tileWidth end
-         if flipV then originY = self.tileHeight end
+         -- Adjust origin when flipping
+        if flipH then originX = self.tileWidth - originX end
+        if flipV then originY = self.tileHeight - originY end
 
         love.graphics.draw(
             self.image,

@@ -3,7 +3,7 @@ item = require("src.units.item")
 local spawner = require("src.units.spawner")
 local destroyer = require("src.units.destroyer")
 
-local tileScale = 1.5 -- You can adjust this to change the size of tiles
+
 
 function update(dt)
     player.update(dt)

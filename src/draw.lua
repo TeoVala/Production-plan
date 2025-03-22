@@ -5,7 +5,7 @@ local item = require("src.units.item")
 local spawner = require("src.units.spawner")
 local destroyer = require("src.units.destroyer")
 
-local tileScale = 1.5 -- You can adjust this to change the size of tiles
+
 
 function draw()
     -- Clear with background color
@@ -14,7 +14,7 @@ function draw()
     map.draw(tileScale)
 
     player.drawShadow(tileScale)
-    item.draw()
+    item.draw(tileScale)
 
     -- Draw spawner and destroyer debug visuals (optional)
     spawner.draw(tileScale)
