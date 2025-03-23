@@ -6,7 +6,6 @@ local map = require("src.mapRender")
 destroyer.locations = {}
 destroyer.initialized = false
 
-
 -- Simple AABB collision check
 function destroyer.checkCollision(rect1, rect2)
     return not (

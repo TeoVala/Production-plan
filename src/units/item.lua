@@ -3,8 +3,9 @@ local window = require("src.window")
 local map = require("src.mapRender")
 
 levelItems = {}
+grabbedItems = {}
 
-local itemsValuesId = {
+itemsValuesId = {
     [1] = { 1, 1 },
     [2] = { 1, 2 },
     [3] = { 1, 3 },
@@ -14,9 +15,9 @@ local itemsValuesId = {
 
 -- Store the color values themselves, not the function calls
 local colRarValues = {
-    [1] = {1, 1, 1, 0.8},             
-    [2] = {101/255, 217/255, 59/255, .85},          -- Green #65d93b
-    [3] = {32/255, 107/255, 227/255, .8}           -- Blue #206be3
+    [1] = { 1, 1, 1, 0.8 },
+    [2] = { 101 / 255, 217 / 255, 59 / 255, .85 }, -- Green #65d93b
+    [3] = { 32 / 255, 107 / 255, 227 / 255, .8 }   -- Blue #206be3
 }
 
 -- Conveyor movement definitions - first phase, second phase
@@ -39,6 +40,26 @@ local conveyorDirections = {
 local conveyorSpeed = 35
 local centerThreshold = 5 -- How close to center before changing dir
 local centeringSpeed = 10 -- Speed at which items center themselves to tile centers
+
+
+function tableToString(t)
+    local str = "{"
+    for i, v in ipairs(t) do
+        if type(v) == "table" then
+            -- If the value is a table, recursively call tableToString
+            str = str .. tableToString(v)
+        else
+            -- Otherwise, just append the value
+            str = str .. tostring(v)
+        end
+        if i < #t then
+            str = str .. ", " -- Add a comma after each item except the last
+        end
+    end
+    str = str .. "}"
+    return str
+end
+
 
 -- Helper function to get tile type and center at a specific position
 function item.getTileInfoAtPosition(x, y, tileScale)
@@ -216,14 +237,13 @@ function item.draw(tileScale)
         local tileDrawX = itemCenterX - tileDrawWidth / 2
         local tileDrawY = itemCenterY - tileDrawHeight / 2
 
-
         -- -- Draw colored outline based on item value
         love.graphics.setColor(1, 1, 1)
         itemsTileset:drawTile(
             outLineIndex,
             tileDrawX,            -- Adjusted X to center the tile
             tileDrawY,            -- Adjusted Y to center the tile
-            tileScale * 1.35,     -- Scale relative to tile size, also make items a bit bigger
+            tileScale * 1.40,     -- Scale relative to tile size, also make items a bit bigger
             theItem.rotation or 0 -- Rotation
         )
 
@@ -232,13 +252,13 @@ function item.draw(tileScale)
 
         -- Apply the color based on the itemValue
         local colorToUse = colRarValues[theItem.itemValue] or colRarValues[1] -- Default to first color if not found
-        love.graphics.setColor(unpack(colorToUse))                    -- unpack converts the table to individual arguments
+        love.graphics.setColor(unpack(colorToUse))                            -- unpack converts the table to individual arguments
 
         itemsTileset:drawTile(
             outLineIndex,
             tileDrawX,
             tileDrawY,
-            tileScale * 1.35,
+            tileScale * 1.40,
             theItem.rotation or 0
         )
 
@@ -264,9 +284,39 @@ function item.draw(tileScale)
         -- love.graphics.circle('fill', centerX, centerY, 3)
     end
 
+
+    -- DEBUG START Set debug color (red with transparency)
+    -- love.graphics.setColor(1, 0, 0, 0.5)
+
+    -- local windowScale = math.min(window.getScaleX(), window.getScaleY())
+    -- local xOffset = (window.getCurrentWidth() - window.getOriginalWidth() * windowScale) / 2
+
+    -- -- Draw collision rectangles for all items
+    -- for _, item in ipairs(levelItems) do
+    --     -- Retrieve item original position
+    --     local originalX = item.x
+    --     local originalY = item.y
+    --     local tileSize = 16 * windowScale
+
+    --     -- Scale the positions
+    --     local left = originalX * windowScale + xOffset-tileSize - ((tileSize * windowScale) *2.35) /4
+    --     local top = originalY * windowScale-tileSize - ((tileSize * windowScale) *2.35) /4
+    --     local width = (tileSize * windowScale) *2.35 -- 2.35 is the grabber threshold
+    --     local height = (tileSize * windowScale)*2.35
+
+    --     -- Draw the collision rectangle
+    --     love.graphics.setColor(1, 0, 0, 1)                        -- Set color to red for visibility
+    --     love.graphics.rectangle('line', left, top, width, height) -- Draw outline
+    -- end
+
+
+    -- Debug END x_x this one got me good
+
     -- Display item count for debugging
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("Items: " .. #levelItems, 10, 250)
+    -- love.graphics.print("Items: " .. #levelItems, 10, 250)
+    -- love.graphics.print("grabbedItemsItems: " .. #grabbedItems, 10, 260)
+    -- love.graphics.print("grabbedItems: " .. tableToString(grabbedItems), 10, 280)
 end
 
 return item

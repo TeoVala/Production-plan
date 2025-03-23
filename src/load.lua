@@ -1,6 +1,7 @@
 local window = require("src.window")
 local Tileset = require("src.tileset")
 local player = require("src.units.player")
+local plan = require("src.sys.machPlan")
 
 function load()
     window.initialize()
@@ -28,4 +29,5 @@ function load()
     tileset:createAnimation("conv-BU", tileset:getTileIndex(3,1), 3, .25)
 
     player.load()
+    plan.init()
 end

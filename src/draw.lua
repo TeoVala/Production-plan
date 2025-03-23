@@ -4,6 +4,7 @@ local map = require("src.mapRender")
 local item = require("src.units.item")
 local spawner = require("src.units.spawner")
 local destroyer = require("src.units.destroyer")
+local hud = require("src.sys.gameHud")
 
 
 
@@ -23,6 +24,7 @@ function draw()
     -- Draw player
     player.draw(tileScale)
 
+    hud.draw(tileScale)
     -- Draw debug info
     window.drawDebugInfo()
 end
