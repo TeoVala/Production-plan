@@ -26,10 +26,233 @@ function player.load()
     player.currentDelay = 0
 end
 
+-- Add a variable to track collisions for debugging
+player.debugInfo = {
+    playerRect = nil,
+    wallRects = {},
+    checkingTiles = {},
+    lastCollision = nil,
+    collisionTime = 0
+}
+
+-- Debug draw function to visualize collisions
+function player.drawDebug()
+    local windowScale = math.min(window.getScaleX(), window.getScaleY())
+    local xOffset = (window.getCurrentWidth() - window.getOriginalWidth() * windowScale) / 2
+    local yOffset = (window.getCurrentHeight() - window.getOriginalHeight() * windowScale) / 2
+
+    -- Draw player hitbox
+    if player.debugInfo.playerRect then
+        love.graphics.setColor(0, 1, 0, 0.5) -- Green semi-transparent
+        love.graphics.rectangle("line",
+            player.debugInfo.playerRect.left * windowScale + xOffset,
+            player.debugInfo.playerRect.top * windowScale + yOffset,
+            (player.debugInfo.playerRect.right - player.debugInfo.playerRect.left) * windowScale,
+            (player.debugInfo.playerRect.bottom - player.debugInfo.playerRect.top) * windowScale
+        )
+    end
+
+    -- Draw wall tiles being checked
+    love.graphics.setColor(1, 1, 0, 0.3) -- Yellow semi-transparent
+    for _, tileRect in ipairs(player.debugInfo.checkingTiles) do
+        love.graphics.rectangle("line",
+            tileRect.left * windowScale + xOffset,
+            tileRect.top * windowScale + yOffset,
+            (tileRect.right - tileRect.left) * windowScale,
+            (tileRect.bottom - tileRect.top) * windowScale
+        )
+    end
+
+    -- Draw wall rects that are colliding
+    love.graphics.setColor(1, 0, 0, 0.5) -- Red semi-transparent
+    for _, wallRect in ipairs(player.debugInfo.wallRects) do
+        love.graphics.rectangle("fill",
+            wallRect.left * windowScale + xOffset,
+            wallRect.top * windowScale + yOffset,
+            (wallRect.right - wallRect.left) * windowScale,
+            (wallRect.bottom - wallRect.top) * windowScale
+        )
+    end
+
+    -- Draw last collision point
+    if player.debugInfo.lastCollision and player.debugInfo.collisionTime > 0 then
+        love.graphics.setColor(1, 0, 1, player.debugInfo.collisionTime) -- Purple fading
+        love.graphics.circle("fill",
+            player.debugInfo.lastCollision.x * windowScale + xOffset,
+            player.debugInfo.lastCollision.y * windowScale + yOffset,
+            5 * windowScale
+        )
+        player.debugInfo.collisionTime = player.debugInfo.collisionTime - 0.01
+    end
+
+    -- Reset color
+    love.graphics.setColor(1, 1, 1, 1)
+
+    -- Draw debug text
+    love.graphics.print("Player Position: " .. math.floor(player.x) .. ", " .. math.floor(player.y), 10, 10)
+    love.graphics.print("Velocity: " .. string.format("%.2f", player.xvel) .. ", " .. string.format("%.2f", player.yvel),
+        10, 30)
+    love.graphics.print("Checking Tiles: " .. #player.debugInfo.checkingTiles, 10, 50)
+    love.graphics.print("Wall Collisions: " .. #player.debugInfo.wallRects, 10, 70)
+end
+
+function player.checkWallCollision()
+    -- Clear previous debug info
+    player.debugInfo.checkingTiles = {}
+    player.debugInfo.wallRects = {}
+
+    -- Get the map data
+    local mapTiles = map.mapTiles
+    if not mapTiles then return false, nil end
+
+    -- Calculate map dimensions
+    local mapWidth = #mapTiles[1]
+    local mapHeight = #mapTiles
+
+    -- Center the map (same calculation as in mapRender.lua)
+    local mapX = ((window.getOriginalWidth() - (mapWidth * tileSize * tileScale)) / 2) - tileSize
+    local mapY = ((window.getOriginalHeight() - (mapHeight * tileSize * tileScale)) / 2) - tileSize
+
+    -- Calculate player hitbox
+    local playerWidth = 12 * tileScale -- Slightly smaller than tile size
+    local playerHeight = 12 * tileScale
+
+
+    local playerLeft = player.x - playerWidth / 2
+    local playerRight = player.x + playerWidth / 2
+    local playerTop = (player.y - playerHeight / 2) + tileSize / 2 -- Adjust top collision as requested
+    local playerBottom = (player.y + playerHeight / 2 + player.targetY) - tileSize
+
+    -- Save player rect for debug drawing
+    player.debugInfo.playerRect = {
+        left = playerLeft,
+        top = playerTop,
+        right = playerRight,
+        bottom = playerBottom
+    }
+
+    -- Determine which tiles the player is currently overlapping with
+    local startTileX = math.floor((playerLeft - mapX) / (tileSize * tileScale)) + 1
+    local endTileX = math.floor((playerRight - mapX) / (tileSize * tileScale)) + 1
+    local startTileY = math.floor((playerTop - mapY) / (tileSize * tileScale)) + 1
+    local endTileY = math.floor((playerBottom - mapY) / (tileSize * tileScale)) + 1
+
+    -- Clamp to map boundaries
+    startTileX = math.max(1, startTileX)
+    endTileX = math.min(mapWidth, endTileX)
+    startTileY = math.max(1, startTileY)
+    endTileY = math.min(mapHeight, endTileY)
+
+    -- Track collisions
+    local foundCollision = false
+    local allCollidingRects = {}
+
+    -- Check for wall collisions (tiles 20-27 are walls)
+    for y = startTileY, endTileY do
+        for x = startTileX, endTileX do
+            local tileValue = mapTiles[y][x]
+
+            -- Calculate tile position
+            local tileX = mapX + ((x - 1) * tileSize * tileScale)
+            local tileY = mapY + ((y - 1) * tileSize * tileScale)
+
+            -- Create collision rect for the tile
+            local tileRect = {
+                left = tileX,
+                top = tileY,
+                right = tileX + tileSize * tileScale,
+                bottom = tileY + tileSize * tileScale
+            }
+
+            -- Add to checking tiles for debug
+            table.insert(player.debugInfo.checkingTiles, tileRect)
+
+            -- Wall tiles are in the range 20-27
+            if tileValue >= 20 and tileValue <= 27 then
+                -- Create collision rect for the player
+                local playerRect = {
+                    left = playerLeft,
+                    top = playerTop,
+                    right = playerRight,
+                    bottom = playerBottom
+                }
+
+                -- Check for collision
+                if player.checkCollision(playerRect, tileRect) then
+                    -- Add to wall rects for debug
+                    table.insert(player.debugInfo.wallRects, tileRect)
+                    table.insert(allCollidingRects, tileRect)
+
+                    -- Record collision point
+                    player.debugInfo.lastCollision = {
+                        x = player.x,
+                        y = player.y
+                    }
+                    player.debugInfo.collisionTime = 1.0
+
+                    foundCollision = true
+                end
+            end
+        end
+    end
+
+    return foundCollision, allCollidingRects
+end
+
 -- Player physics
 function physics(dt)
+    -- Store previous position
+    local prevX, prevY = player.x, player.y
+
+    -- Apply velocity
     player.x = player.x + player.xvel * dt
     player.y = player.y + player.yvel * dt
+
+    -- Check for wall collision
+    local collision, wallRects = player.checkWallCollision()
+
+    -- If collision occurred, resolve it
+    if not player.isLowering and not player.returning and collision then
+        -- Handle each colliding wall
+        for _, wallRect in ipairs(wallRects) do
+            -- Calculate player hitbox with the same adjustments as in checkWallCollision
+            local playerWidth = 12 * tileScale
+            local playerHeight = 12 * tileScale
+
+            local playerRect = {
+                left = player.x - playerWidth / 2,
+                right = player.x + playerWidth / 2,
+                top = (player.y - playerHeight / 2) + tileSize / 2, -- Adjust top collision
+                bottom = (player.y + playerHeight / 2 + player.targetY) - tileSize
+            }
+
+            -- Calculate overlap in each direction
+            local overlapLeft = playerRect.right - wallRect.left
+            local overlapRight = wallRect.right - playerRect.left
+            local overlapTop = playerRect.bottom - wallRect.top
+            local overlapBottom = wallRect.bottom - playerRect.top
+
+            -- Find minimum overlap
+            local minOverlap = math.min(overlapLeft, overlapRight, overlapTop, overlapBottom)
+
+            -- Resolve by the minimum overlap direction
+            if minOverlap == overlapLeft and player.xvel > 0 then
+                player.x = player.x - overlapLeft
+                player.xvel = 0
+            elseif minOverlap == overlapRight and player.xvel < 0 then
+                player.x = player.x + overlapRight
+                player.xvel = 0
+            elseif minOverlap == overlapTop and player.yvel > 0 then
+                player.y = player.y - overlapTop
+                player.yvel = 0
+            elseif minOverlap == overlapBottom and player.yvel < 0 then
+                player.y = player.y + overlapBottom
+                player.yvel = 0
+            end
+        end
+    end
+
+    -- Apply friction
     player.xvel = player.xvel * (1 - math.min(dt * player.friction, 1))
     player.yvel = player.yvel * (1 - math.min(dt * player.friction, 1))
 end
@@ -275,7 +498,7 @@ function player.draw(scaleChar)
         tileset:drawTile(tileset:getTileIndex(5, 1), player.x, player.y, scaleChar, 0)
     end
 
-
+    -- player.drawDebug()
     -- Reset color and draw debug info
     -- love.graphics.setColor(1, 1, 1)
     -- love.graphics.print("Lowering: " .. tostring(player.isLowering), 10, 10)

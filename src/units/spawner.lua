@@ -12,8 +12,8 @@ end
 
 spawner.timers = {} -- Keeps track of timer for each spawner, used it in update
 spawner.initialized = false
-local spawnIntervals = { 3.75, 3.80, 3.85, 3.90, 4.0, 4.25, 4.35, 4.5, 4.5, 4.5, 4.75, 4.85, 5.0, 5.5, 6.0 }
-
+-- local spawnIntervals = { 3.75, 3.80, 3.85, 3.90, 4.0, 4.25, 4.35, 4.5, 4.5, 4.5, 4.75, 4.85, 5.0, 5.5, 6.0 }
+local spawnIntervals = { 4.0, 4.25, 4.35, 4.5, 4.5, 4.5, 4.75, 4.85, 5.0, 5.5, 6.0 }
 -- Store spawner locations
 spawner.locations = {}
 
@@ -182,13 +182,13 @@ function spawner.draw(tileScale)
         --     tileSize * tileScale * windowScale
         -- )
 
-        -- Draw timer
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.print(
-            string.format("%.1f", spawn.timer),
-            spawn.x * windowScale + xOffset,
-            spawn.y * windowScale + yOffset
-        )
+        -- Draw timer debug
+        -- love.graphics.setColor(1, 1, 1)
+        -- love.graphics.print(
+        --     string.format("%.1f", spawn.timer),
+        --     spawn.x * windowScale + xOffset,
+        --     spawn.y * windowScale + yOffset
+        -- )
     end
 end
 

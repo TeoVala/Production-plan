@@ -3,6 +3,15 @@ score = {}
 scoreNum = 0
 totalValuePoints = 0
 local orderMultiplier = 1.25 -- Bonus multiplier for correct order
+currtime = 300
+
+function score.update(dt)
+    if currtime <= 0 then
+        isPaused = true
+    end
+
+    currtime = currtime - dt
+end
 
 function score.runCalc()
     for i, item in ipairs(grabbedItems) do
@@ -18,7 +27,7 @@ function score.runCalc()
     end
 
     -- Finally add score stuff
-    scoreNum = math.floor((#grabbedItems * totalValuePoints)*100)
+    scoreNum = math.floor((#grabbedItems * totalValuePoints) * 100)
 
     totalValuePoints = 0
     grabbedItems = {}

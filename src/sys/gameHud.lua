@@ -2,6 +2,7 @@ local window = require('src.window')
 
 hud = {}
 -- itemsValuesId all local locations
+playerHealth = 6
 
 function tableToString(t)
     local str = "{"
@@ -26,37 +27,64 @@ end
 
 function hud.drawScore()
     -- Define the score display parameters
-    local scoreX = 20 -- Position from left edge
-    local scoreY = 20 -- Position from top edge
+    local scoreX = 20    -- Position from left edge
+    local scoreY = 20    -- Position from top edge
     local fontSize = 1.2 -- Scale of the font
-    local scoreText = "Score: " .. scoreNum
-    local padding = 10 -- Padding inside the box
+    local padding = 10   -- Padding inside the box
 
-    -- Calculate text dimensions
+    -- Format the score text
+    local scoreText = "Score: " .. scoreNum
+
+    -- Calculate the width based on the actual rendered text
     local font = love.graphics.getFont()
-    local textWidth = font:getWidth(scoreText) * fontSize
+    local scoreWidth = font:getWidth(scoreText) * fontSize
     local textHeight = font:getHeight() * fontSize
 
-    -- Draw the box with cool effect
-    love.graphics.setColor(0.1, 0.1, 0.3, 0.8)                                  -- Dark blue background
+    -- Draw the score box
+    love.graphics.setColor(0.1, 0.1, 0.3, 0.8)
     love.graphics.rectangle('fill', scoreX - padding, scoreY - padding,
-        textWidth + padding * 2, textHeight + padding * 2, 8, 8)                -- Rounded corners
+        scoreWidth + padding * 2, textHeight + padding * 2, 8, 8)
 
     -- Draw glowing border
-    love.graphics.setColor(0.4, 0.6, 1, 0.7) -- Light blue glow
+    love.graphics.setColor(0.4, 0.6, 1, 0.7)
     love.graphics.setLineWidth(3)
     love.graphics.rectangle('line', scoreX - padding, scoreY - padding,
-        textWidth + padding * 2, textHeight + padding * 2, 8, 8)
+        scoreWidth + padding * 2, textHeight + padding * 2, 8, 8)
 
     -- Add inner highlight line
-    love.graphics.setColor(0.8, 0.9, 1, 0.5) -- Lighter blue inner highlight
+    love.graphics.setColor(0.8, 0.9, 1, 0.5)
     love.graphics.setLineWidth(1)
     love.graphics.rectangle('line', scoreX - padding + 3, scoreY - padding + 3,
-        textWidth + padding * 2 - 6, textHeight + padding * 2 - 6, 6, 6)
+        scoreWidth + padding * 2 - 6, textHeight + padding * 2 - 6, 6, 6)
 
-    -- Draw the text
-    love.graphics.setColor(1, 1, 1, 1) -- White text
+    -- Draw the score text
+    love.graphics.setColor(1, 1, 1, 1)
     love.graphics.print(scoreText, scoreX, scoreY, 0, fontSize, fontSize)
+
+    -- Timer text and width
+    local timerText = "Time: " .. math.floor(currtime)
+    local timerWidth = font:getWidth(timerText) * fontSize
+
+    -- Timer box
+    love.graphics.setColor(0.1, 0.1, 0.3, 0.8)
+    love.graphics.rectangle('fill', scoreX - padding, scoreY + 60 - padding,
+        timerWidth + padding * 2, textHeight + padding * 2, 8, 8)
+
+    -- Timer border
+    love.graphics.setColor(0.4, 0.6, 1, 0.7)
+    love.graphics.setLineWidth(3)
+    love.graphics.rectangle('line', scoreX - padding, scoreY + 60 - padding,
+        timerWidth + padding * 2, textHeight + padding * 2, 8, 8)
+
+    -- Timer inner highlight
+    love.graphics.setColor(0.8, 0.9, 1, 0.5)
+    love.graphics.setLineWidth(1)
+    love.graphics.rectangle('line', scoreX - padding + 3, scoreY + 60 - padding + 3,
+        timerWidth + padding * 2 - 6, textHeight + padding * 2 - 6, 6, 6)
+
+    -- Draw the timer text
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.print(timerText, scoreX, scoreY + 60, 0, fontSize, fontSize)
 
     -- Reset line width
     love.graphics.setLineWidth(1)
@@ -149,6 +177,64 @@ function hud.draw(tileScale)
         love.graphics.setColor(1, 1, 1, 1)
     end
     hud.drawScore()
+
+    -- Draw health
+    local circleBoxY = boxY + boxHeight + 20 * uiScale
+    local circleBoxHeight = boxHeight
+    local circleRadius = 14
+
+    
+    love.graphics.print("Health", boxX, circleBoxY - 15 * uiScale, 0, fontSize, fontSize)
+
+    -- Draw the second box background
+    love.graphics.setColor(0.2, 0.2, 0.2, 0.8)
+    love.graphics.rectangle('fill', boxX, circleBoxY, boxWidth, circleBoxHeight)
+
+    -- Draw border for the second box
+    love.graphics.setColor(0.8, 0.8, 0.8, 1)
+    love.graphics.rectangle('line', boxX, circleBoxY, boxWidth, circleBoxHeight)
+
+    -- Draw three circles inside the second box to represent health
+    for i = 1, 3 do
+        local circleX = boxX + boxPadding + (i - 1) * (tileSize + tileSpacing) + tileSize / 2
+        local circleY = circleBoxY + boxPadding + tileSize / 2
+
+        local healthSegmentStart = (3 - i) * 2 + 1 -- 5, 3, 1
+        local healthSegmentEnd = (3 - i + 1) * 2   -- 6, 4, 2
+
+        -- Draw the circle with appropriate coloring based on health
+        if playerHealth >= healthSegmentEnd then
+            
+            love.graphics.setColor(0.5, 0.6, 0.7, 0.7) -- Desaturated blue (full health)
+            love.graphics.circle('fill', circleX, circleY, circleRadius)
+        elseif playerHealth == healthSegmentStart then
+            -- Half health for this circle (right half colored, left half darkened)
+            -- Draw the darkened full circle first
+            love.graphics.setColor(0.2, 0.3, 0.4, 0.7) -- Darkened blue (low health)
+            love.graphics.circle('fill', circleX, circleY, circleRadius)
+
+            -- Then draw the half-circle with normal color (right half)
+            love.graphics.setColor(0.5, 0.6, 0.7, 0.7) -- Desaturated blue (full health)
+            love.graphics.arc('fill', circleX, circleY, circleRadius, -math.pi / 2, math.pi / 2)
+        else
+            -- No health for this circle (fully darkened)
+            love.graphics.setColor(0.2, 0.3, 0.4, 0.7) -- Darkened blue (no health)
+            love.graphics.circle('fill', circleX, circleY, circleRadius)
+        end
+
+        -- Draw the gray outline for all circles regardless of health
+        love.graphics.setColor(0.6, 0.6, 0.6, 1) -- Gray outline
+        love.graphics.setLineWidth(2 * uiScale)
+        love.graphics.circle('line', circleX, circleY, circleRadius)
+        love.graphics.setLineWidth(1)
+    end
+
+    -- Reset color for the rest of the drawing
+    love.graphics.setColor(1, 1, 1, 1)
+
+
+    -- Draw health END
+
     -- love.graphics.print("Currplan: " .. tableToString(currPlan), 10, 10)
 end
 
