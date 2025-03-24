@@ -2,7 +2,8 @@ local window = require('src.window')
 
 hud = {}
 -- itemsValuesId all local locations
-playerHealth = 6
+maxHealth = 6
+playerHealth = maxHealth
 
 function tableToString(t)
     local str = "{"

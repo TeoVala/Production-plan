@@ -1,4 +1,3 @@
--- src/units/bulletHell/bulletSpawner.lua
 local window = require('src.window')
 local bullet = require("src.units.bulletHell.bullet")
 

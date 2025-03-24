@@ -2,7 +2,7 @@ local sound = {}
 
 local mainTrack = nil
 local isMuted = false
-local volume = .08
+local volume = .04
 
 function sound.load()
     -- Load the background music file

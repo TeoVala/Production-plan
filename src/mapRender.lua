@@ -2,12 +2,10 @@ local window = require('src.window')
 local levelData = require('src.levels.levelData')
 tileSize = 16
 
-
-
 local mapTiles = {
 }
 
-mapTiles = levelData.level1
+mapTiles = levelData[1]
 
 map = {
     mapTiles = mapTiles, -- Expose the mapTiles table
@@ -45,8 +43,52 @@ tileValues = {
     [41] = { 7, 2 }, -- destroyer
 }
 
+-- Background tile options for empty spaces with their probabilities
+local backgroundTiles = {
+    { tile = {9, 1}, chance = 0.90 }, -- 90% chance
+    { tile = {9, 2}, chance = 0.05 }, -- 5% chance
+    { tile = {9, 3}, chance = 0.05 }  -- 5% chance
+}
+
+-- Pre-compute the background tile indices for each empty tile position
+-- This ensures the same tile is shown for each position between frames
+local emptyTileMappings = {}
+
+function map.initializeEmptyTiles()
+    -- Clear existing mappings
+    emptyTileMappings = {}
+    
+    -- For each tile in the map
+    for i, row in ipairs(mapTiles) do
+        emptyTileMappings[i] = {}
+        for j, value in ipairs(row) do
+            if value == 0 then
+                -- Generate a random number
+                local rand = math.random()
+                local selectedTile = backgroundTiles[1].tile -- Default to first option
+                
+                -- Determine which tile to use based on the random value
+                local cumulativeChance = 0
+                for _, option in ipairs(backgroundTiles) do
+                    cumulativeChance = cumulativeChance + option.chance
+                    if rand <= cumulativeChance then
+                        selectedTile = option.tile
+                        break
+                    end
+                end
+                
+                emptyTileMappings[i][j] = selectedTile
+            end
+        end
+    end
+end
 
 function map.draw(tileScale)
+    -- Initialize empty tiles if not already done
+    if next(emptyTileMappings) == nil then
+        map.initializeEmptyTiles()
+    end
+
     -- Calculate map dimensions
     local mapWidth = #mapTiles[1]
     local mapHeight = #mapTiles
@@ -66,7 +108,20 @@ function map.draw(tileScale)
             local tileX = mapX + ((j - 1) * tileSize * tileScale)
             local tileY = mapY + ((i - 1) * tileSize * tileScale)
 
-            if value < 20 and value ~= 0 then
+            if value == 0 then
+                -- Draw a background tile for empty space
+                if emptyTileMappings[i] and emptyTileMappings[i][j] then
+                    local tileCoords = emptyTileMappings[i][j]
+                    local tileIndex = tileset:getTileIndex(tileCoords[1], tileCoords[2])
+                    
+                    tileset:drawTile(
+                        tileIndex,
+                        tileX, tileY,
+                        tileScale,
+                        0
+                    )
+                end
+            elseif value < 20 and value ~= 0 then
                 tileset:drawAnimation(
                     tileType,
                     tileX,

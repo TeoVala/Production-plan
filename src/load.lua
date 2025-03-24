@@ -4,17 +4,25 @@ local player = require("src.units.player")
 local plan = require("src.sys.machPlan")
 local sound = require("src.sys.soundHandling")
 local bulletSpawner = require("src.units.bulletHell.bulletSpawner") 
+local menu = require("src.sys.menu")
 
 function load()
     window.initialize()
     -- This works in all LÖVE versions
     love.graphics.setDefaultFilter("nearest", "nearest")
 
-    -- Load the tilesets
+    -- Initialize game state
+    gameState = "menu"  -- Start with the menu
+    currentLevel = 1    -- Default level
+    isPaused = false
+    
+    -- Load the menu
+    menu.load()
+
+    -- Load the tilesets (needed for menu backgrounds and game)
     tileset = Tileset.new("assets/Tileset-16x16.jpg")
     itemsTileset = Tileset.new("assets/items-16x16.jpg")
 
-    -- Load and play music
     sound.load()
     sound.play()
 
@@ -40,4 +48,7 @@ function load()
     bulletSpawner.setupSpawners()
 
     plan.init()
+    
+    -- Initialize score
+    scoreNum = 0
 end

@@ -12,6 +12,15 @@ function player.load()
     player.speed = 1200
     grabThreshold = 2.35
 
+    -- For hit collision stuff
+    player.invulnerable = false
+    player.invulnerabilityTimer = 0
+    player.isFlashing = false
+    player.flashTimer = 0
+    player.flashDuration = 0.2         -- Duration of each flash (on or off)
+    player.isDead = false
+    player.invulnerabilityDuration = 2.5 -- Duration of invulnerability in seconds
+
     -- Lower crane
     player.startingY = player.y
     player.targetY = 40
@@ -34,6 +43,66 @@ player.debugInfo = {
     lastCollision = nil,
     collisionTime = 0
 }
+
+function player.makeInvulnerable(duration)
+    player.invulnerable = true
+    player.invulnerabilityTimer = 1 or player.invulnerabilityDuration
+    player.isFlashing = true
+    player.flashTimer = player.flashDuration
+end
+
+function invulnerabilityForTheWeak(dt)
+    -- Update invulnerability timer
+    if player.invulnerable then
+        player.invulnerabilityTimer = player.invulnerabilityTimer - dt
+
+        -- Flash effect handling
+        player.flashTimer = player.flashTimer - dt
+        if player.flashTimer <= 0 then
+            player.isFlashing = not player.isFlashing
+            player.flashTimer = player.flashDuration
+        end
+
+        -- End invulnerability when timer expires
+        if player.invulnerabilityTimer <= 0 then
+            player.invulnerable = false
+            player.isFlashing = false
+        end
+    end
+
+    -- If player has just started returning, make them invulnerable
+    if player.returning and not player.invulnerable then
+        player.makeInvulnerable(player.invulnerabilityDuration)
+    end
+
+    -- Check if player health is depleted
+    if playerHealth <= 0 and not player.isDead then
+        player.isDead = true
+        isPaused = true
+    end
+end
+
+-- Function to update player invulnerability state
+function updatePlayerInvulnerability(player, dt)
+    if player.invulnerable then
+        player.invulnerabilityTimer = player.invulnerabilityTimer - dt
+
+        -- Handle flashing effect
+        if player.isFlashing then
+            player.flashTimer = player.flashTimer - dt
+            if player.flashTimer <= 0 then
+                player.isFlashing = not player.isFlashing
+                player.flashTimer = 0.1 -- Reset flash timer
+            end
+        end
+
+        -- Check if invulnerability period is over
+        if player.invulnerabilityTimer <= 0 then
+            player.invulnerable = false
+            player.isFlashing = false
+        end
+    end
+end
 
 -- Debug draw function to visualize collisions
 function player.drawDebug()
@@ -449,6 +518,8 @@ function player.update(dt)
     physics(dt)
     hookStuff(dt)
     move(dt)
+    
+    invulnerabilityForTheWeak(dt)
 end
 
 function player.drawShadow(scaleChar)
@@ -490,6 +561,17 @@ function player.draw(scaleChar)
     local windowScale = math.min(window.getScaleX(), window.getScaleY())
     local shadowHeight = 3 * scaleChar
 
+    -- Don't draw the player if flashing during invulnerability
+    if player.invulnerable and player.isFlashing then
+        -- Skip drawing the player sprite when flashing
+        -- But still draw debug info and collision boxes if needed
+        if debugMode then
+            player.drawDebugInfo()
+            player.drawHitbox()
+        end
+        return
+    end
+
     -- Draw the player
     love.graphics.setColor(1, 1, 1)
     if player.returning then
@@ -498,6 +580,40 @@ function player.draw(scaleChar)
         tileset:drawTile(tileset:getTileIndex(5, 1), player.x, player.y, scaleChar, 0)
     end
 
+
+    -- Draw collision hit box
+
+    -- -- Draw the player hitbox in green with transparency
+    -- local windowScale = math.min(window.getScaleX(), window.getScaleY())
+
+    -- local xOffset = (window.getCurrentWidth() - window.getOriginalWidth() * windowScale) / 2
+    -- local yOffset = (window.getCurrentHeight() - window.getOriginalHeight() * windowScale) / 2
+
+    -- local playerWidth = 16 * windowScale
+    -- local playerHeight = 16 * windowScale
+
+    -- local playerHitboxWidth = playerWidth * 1.5
+    -- local playerHitboxHeight = playerHeight * 1.5
+
+    -- local playerHitboxX = (player.x - tileSize / 2) * windowScale + (playerWidth - playerHitboxWidth) / 2
+    -- local playerHitboxY = (player.y - tileSize / 2) * windowScale + (playerHeight - playerHitboxHeight) / 2
+
+
+    -- -- Draw the player hitbox in green with transparency
+    -- love.graphics.setColor(1, 0, 0, 0.8) -- Green with alpha
+
+    -- love.graphics.rectangle(
+    --     "line",
+    --     playerHitboxX + xOffset,
+    --     playerHitboxY + yOffset,
+    --     playerHitboxWidth,
+    --     playerHitboxHeight
+    -- )
+
+    -- -- Reset color
+    -- love.graphics.setColor(1, 1, 1, 1)
+
+    -- Draw collision hitbox END
     -- player.drawDebug()
     -- Reset color and draw debug info
     -- love.graphics.setColor(1, 1, 1)
